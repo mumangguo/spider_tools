@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64转图片 - Spider</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea'/><stop offset='50%' style='stop-color:%23764ba2'/><stop offset='100%' style='stop-color:%23fa709a'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23grad)'/><g fill='white'><circle cx='50' cy='40' r='8'/><circle cx='35' cy='35' r='3'/><circle cx='65' cy='35' r='3'/><circle cx='30' cy='50' r='2'/><circle cx='70' cy='50' r='2'/><circle cx='35' cy='65' r='2'/><circle cx='65' cy='65' r='2'/><path d='M35 35L25 25M65 35L75 25M30 50L20 50M70 50L80 50M35 65L25 75M65 65L75 75M40 30L30 20M60 30L70 20' stroke='white' stroke-width='2' fill='none'/></g></svg>">
+<link rel="stylesheet" type="text/css" href="css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .tool-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #718096;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #fa709a;
+            border-bottom-color: #fa709a;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .upload-area {
+            border: 2px dashed #e2e8f0;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #fa709a;
+            background: #fef5f5;
+        }
+
+        .upload-area.dragover {
+            border-color: #fa709a;
+            background: #fef5f5;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #cbd5e0;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: #718096;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            font-size: 0.9rem;
+            color: #a0aec0;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: #fa709a;
+            box-shadow: 0 0 0 3px rgba(250, 112, 154, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(250, 112, 154, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f7fafc;
+            color: #ffffff;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        .preview-area {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .image-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .info-value {
+            color: #ffffff;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: #718096;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: color 0.3s ease;
+            margin-left: auto;
+        }
+
+        .copy-btn:hover {
+            color: #ffffff;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .success-message {
+            background: #c6f6d5;
+            color: #2f855a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #38a169;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+            
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-btn">
+        <i class="fas fa-arrow-left"></i>
+        返回首页
+    </a>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-image"></i> Base64转图片工具</h1>
+            <p>图片与Base64编码互相转换</p>
+        </div>
+
+        <div class="tool-container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('imageToBase64')">图片转Base64</button>
+                <button class="tab" onclick="switchTab('base64ToImage')">Base64转图片</button>
+            </div>
+
+            <!-- 图片转Base64 -->
+            <div id="imageToBase64" class="tab-content active">
+                <div class="section-title">
+                    <i class="fas fa-upload"></i>
+                    选择图片文件
+                </div>
+                
+                <div class="upload-area" onclick="document.getElementById('imageInput').click()" 
+                     ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">点击选择图片或拖拽到此处</div>
+                    <div class="upload-hint">支持 JPG、PNG、GIF、WebP 等格式，最大 10MB</div>
+                </div>
+                
+                <input type="file" id="imageInput" class="file-input" accept="image/*" onchange="handleImageUpload(event)">
+                
+                <div id="imagePreview" class="preview-area" style="display: none;">
+                    <img id="previewImg" class="preview-image">
+                    <div id="imageInfoPanel" class="image-info"></div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="convertImageToBase64()" id="convertBtn" disabled>
+                        <i class="fas fa-magic"></i>
+                        转换为Base64
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearImage()">
+                        <i class="fas fa-trash"></i>
+                        清空
+                    </button>
+                </div>
+                
+                <div class="section-title" id="base64OutputTitle" style="display: none;">
+                    <i class="fas fa-code"></i>
+                    Base64编码结果
+                    <button class="copy-btn" onclick="copyBase64Output()" title="复制Base64">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                <textarea id="base64Output" class="textarea" placeholder="Base64编码结果将在这里显示..." style="display: none;"></textarea>
+            </div>
+
+            <!-- Base64转图片 -->
+            <div id="base64ToImage" class="tab-content">
+                <div class="section-title">
+                    <i class="fas fa-code"></i>
+                    输入Base64编码
+                </div>
+                <textarea 
+                    id="base64Input" 
+                    class="textarea" 
+                    placeholder="请输入Base64编码字符串，支持带data:image前缀或纯Base64字符串"
+                ></textarea>
+                
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="convertBase64ToImage()">
+                        <i class="fas fa-magic"></i>
+                        转换为图片
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearBase64()">
+                        <i class="fas fa-trash"></i>
+                        清空
+                    </button>
+                </div>
+                
+                <div class="section-title" id="imageOutputTitle" style="display: none;">
+                    <i class="fas fa-image"></i>
+                    图片预览
+                    <button class="copy-btn" onclick="downloadImage()" title="下载图片" id="downloadBtn">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+                <div id="imageOutput" class="preview-area" style="display: none;">
+                    <img id="outputImg" class="preview-image">
+                    <div id="outputImageInfo" class="image-info"></div>
+                </div>
+            </div>
+
+            <div id="messageArea"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let currentBase64 = null;
+
+        function showMessage(message, type = 'success') {
+            const messageArea = document.getElementById('messageArea');
+            const messageClass = type === 'error' ? 'error-message' : 'success-message';
+            messageArea.innerHTML = `<div class="${messageClass}">${message}</div>`;
+            
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 3000);
+        }
+
+        function switchTab(tabName) {
+            // 隐藏所有选项卡内容
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // 移除所有选项卡的active类
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // 显示选中的选项卡内容
+            document.getElementById(tabName).classList.add('active');
+            
+            // 添加active类到选中的选项卡
+            event.target.classList.add('active');
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(event) {
+            event.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            // 检查文件类型
+            if (!file.type.startsWith('image/')) {
+                showMessage('请选择图片文件', 'error');
+                return;
+            }
+            
+            // 检查文件大小（10MB）
+            if (file.size > 10 * 1024 * 1024) {
+                showMessage('图片文件过大，请选择小于10MB的图片', 'error');
+                return;
+            }
+            
+            currentFile = file;
+            
+            // 显示图片预览
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewImg = document.getElementById('previewImg');
+                const imagePreview = document.getElementById('imagePreview');
+                const imageInfoPanel = document.getElementById('imageInfoPanel');
+                const convertBtn = document.getElementById('convertBtn');
+                
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'flex';
+                convertBtn.disabled = false;
+                
+                // 显示图片信息
+                const fileSize = (file.size / 1024).toFixed(2);
+                const fileSizeUnit = fileSize > 1024 ? `${(fileSize / 1024).toFixed(2)} MB` : `${fileSize} KB`;
+                
+                imageInfoPanel.innerHTML = `
+                    <div class="info-item">
+                        <span class="info-label">文件名:</span>
+                        <span class="info-value">${file.name}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">文件大小:</span>
+                        <span class="info-value">${fileSizeUnit}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">文件类型:</span>
+                        <span class="info-value">${file.type}</span>
+                    </div>
+                `;
+                
+                // 获取图片尺寸
+                previewImg.onload = function() {
+                    imageInfoPanel.innerHTML += `
+                        <div class="info-item">
+                            <span class="info-label">图片尺寸:</span>
+                            <span class="info-value">${this.naturalWidth} × ${this.naturalHeight}</span>
+                        </div>
+                    `;
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function convertImageToBase64() {
+            if (!currentFile) {
+                showMessage('请先选择图片文件', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Output = document.getElementById('base64Output');
+                const base64OutputTitle = document.getElementById('base64OutputTitle');
+                
+                currentBase64 = e.target.result;
+                base64Output.value = currentBase64;
+                base64Output.style.display = 'block';
+                base64OutputTitle.style.display = 'flex';
+                
+                showMessage('图片转换为Base64成功！');
+            };
+            reader.readAsDataURL(currentFile);
+        }
+
+        function convertBase64ToImage() {
+            const input = document.getElementById('base64Input').value.trim();
+            
+            if (!input) {
+                showMessage('请输入Base64编码', 'error');
+                return;
+            }
+            
+            try {
+                let base64Data = input;
+                
+                // 如果不是data URL格式，尝试添加前缀
+                if (!base64Data.startsWith('data:')) {
+                    // 尝试检测图片类型
+                    const firstChars = base64Data.substring(0, 10);
+                    let mimeType = 'image/png'; // 默认
+                    
+                    if (firstChars.startsWith('/9j/')) {
+                        mimeType = 'image/jpeg';
+                    } else if (firstChars.startsWith('iVBOR')) {
+                        mimeType = 'image/png';
+                    } else if (firstChars.startsWith('R0lGO')) {
+                        mimeType = 'image/gif';
+                    }
+                    
+                    base64Data = `data:${mimeType};base64,${base64Data}`;
+                }
+                
+                const outputImg = document.getElementById('outputImg');
+                const imageOutput = document.getElementById('imageOutput');
+                const imageOutputTitle = document.getElementById('imageOutputTitle');
+                const outputImageInfo = document.getElementById('outputImageInfo');
+                
+                outputImg.onload = function() {
+                    imageOutput.style.display = 'flex';
+                    imageOutputTitle.style.display = 'flex';
+                    
+                    // 计算Base64大小
+                    const base64Size = (base64Data.length * 3 / 4 / 1024).toFixed(2);
+                    const sizeUnit = base64Size > 1024 ? `${(base64Size / 1024).toFixed(2)} MB` : `${base64Size} KB`;
+                    
+                    outputImageInfo.innerHTML = `
+                        <div class="info-item">
+                            <span class="info-label">图片尺寸:</span>
+                            <span class="info-value">${this.naturalWidth} × ${this.naturalHeight}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">估算大小:</span>
+                            <span class="info-value">${sizeUnit}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">格式:</span>
+                            <span class="info-value">${base64Data.split(';')[0].split(':')[1]}</span>
+                        </div>
+                    `;
+                    
+                    showMessage('Base64转换为图片成功！');
+                };
+                
+                outputImg.onerror = function() {
+                    throw new Error('无效的Base64图片数据');
+                };
+                
+                outputImg.src = base64Data;
+                currentBase64 = base64Data;
+                
+            } catch (error) {
+                showMessage(`转换失败: ${error.message}`, 'error');
+            }
+        }
+
+        function clearImage() {
+            currentFile = null;
+            document.getElementById('imageInput').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('base64Output').style.display = 'none';
+            document.getElementById('base64OutputTitle').style.display = 'none';
+            document.getElementById('base64Output').value = '';
+            document.getElementById('convertBtn').disabled = true;
+        }
+
+        function clearBase64() {
+            document.getElementById('base64Input').value = '';
+            document.getElementById('imageOutput').style.display = 'none';
+            document.getElementById('imageOutputTitle').style.display = 'none';
+            currentBase64 = null;
+        }
+
+        function copyBase64Output() {
+            const output = document.getElementById('base64Output');
+            const text = output.value;
+            
+            if (!text) {
+                showMessage('没有可复制的内容', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('Base64编码复制成功！');
+            }).catch(() => {
+                showMessage('复制失败', 'error');
+            });
+        }
+
+        function downloadImage() {
+            if (!currentBase64) {
+                showMessage('没有可下载的图片', 'error');
+                return;
+            }
+            
+            try {
+                const link = document.createElement('a');
+                link.href = currentBase64;
+                
+                // 从MIME类型推断文件扩展名
+                const mimeType = currentBase64.split(';')[0].split(':')[1];
+                const extension = mimeType.split('/')[1];
+                
+                link.download = `converted_image.${extension}`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showMessage('图片下载成功！');
+            } catch (error) {
+                showMessage(`下载失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 示例Base64数据（一个小的透明PNG）
+        const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+        document.getElementById('base64Input').value = sampleBase64;
+    </script>
+</body>
+</html> 

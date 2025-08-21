@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie格式化 - Spider</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea'/><stop offset='50%' style='stop-color:%23764ba2'/><stop offset='100%' style='stop-color:%23fa709a'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23grad)'/><g fill='white'><circle cx='50' cy='40' r='8'/><circle cx='35' cy='35' r='3'/><circle cx='65' cy='35' r='3'/><circle cx='30' cy='50' r='2'/><circle cx='70' cy='50' r='2'/><circle cx='35' cy='65' r='2'/><circle cx='65' cy='65' r='2'/><path d='M35 35L25 25M65 35L75 25M30 50L20 50M70 50L80 50M35 65L25 75M65 65L75 75M40 30L30 20M60 30L70 20' stroke='white' stroke-width='2' fill='none'/></g></svg>">
+<link rel="stylesheet" type="text/css" href="css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #e2e8f0; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 15px; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); transition: all 0.3s ease; }
+        .back-btn:hover { background: rgba(255,255,255,0.3); }
+        .tool-container { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .textarea { width: 100%; min-height: 150px; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-family: monospace; font-size: 14px; resize: vertical; }
+        .textarea:focus { outline: none; border-color: #4facfe; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin: 10px 5px; }
+        .btn-primary { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+        .output-area { background: #f8f9fa; border: 2px solid #e2e8f0; border-radius: 10px; padding: 15px; min-height: 150px; font-family: monospace; font-size: 14px; white-space: pre-wrap; }
+        .success-message { background: #c6f6d5; color: #2f855a; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .error-message { background: #fed7d7; color: #c53030; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .format-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }
+        .format-btn { padding: 10px; border: 2px solid #e2e8f0; background: white; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.3s ease; }
+        .format-btn.active { border-color: #4facfe; background: #f0f8ff; }
+        .cookie-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .cookie-table th, .cookie-table td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        .cookie-table th { background: #f8f9fa; font-weight: 600; color: #ffffff; }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-btn"><i class="fas fa-arrow-left"></i> 返回首页</a>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-cookie-bite"></i> Cookie格式化工具</h1>
+            <p>解析和格式化Cookie字符串，转换为字典格式</p>
+        </div>
+        <div class="tool-container">
+            <h3>输入Cookie字符串</h3>
+            <textarea id="cookieInput" class="textarea" placeholder="请输入Cookie字符串，例如：&#10;sessionid=abc123; csrftoken=xyz789; user_id=12345"></textarea>
+            
+            <div class="format-options">
+                <button class="format-btn active" onclick="setFormat('table')">表格格式</button>
+                <button class="format-btn" onclick="setFormat('json')">JSON格式</button>
+                <button class="format-btn" onclick="setFormat('python')">Python字典</button>
+                <button class="format-btn" onclick="setFormat('javascript')">JavaScript对象</button>
+            </div>
+            
+            <button class="btn btn-primary" onclick="parseCookies()"><i class="fas fa-magic"></i> 解析Cookie</button>
+            <button class="btn" onclick="clearAll()">清空</button>
+            
+            <div id="messageArea"></div>
+            
+            <h3>解析结果</h3>
+            <div id="cookieOutput" class="output-area">解析结果将在这里显示...</div>
+        </div>
+    </div>
+    <script>
+        let currentFormat = 'table';
+        
+        function showMessage(msg, type='success') {
+            document.getElementById('messageArea').innerHTML = `<div class="${type}-message">${msg}</div>`;
+            setTimeout(() => document.getElementById('messageArea').innerHTML = '', 3000);
+        }
+        
+        function setFormat(format) {
+            currentFormat = format;
+            document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        
+        function parseCookies() {
+            const input = document.getElementById('cookieInput').value.trim();
+            if (!input) {
+                showMessage('请输入Cookie字符串', 'error');
+                return;
+            }
+            
+            try {
+                const cookies = {};
+                const pairs = input.split(/[;\n]/).map(pair => pair.trim()).filter(pair => pair);
+                
+                for (const pair of pairs) {
+                    const equalIndex = pair.indexOf('=');
+                    if (equalIndex === -1) continue;
+                    
+                    const key = pair.substring(0, equalIndex).trim();
+                    const value = pair.substring(equalIndex + 1).trim();
+                    cookies[key] = value;
+                }
+                
+                if (Object.keys(cookies).length === 0) {
+                    showMessage('未找到有效的Cookie', 'error');
+                    return;
+                }
+                
+                let result = '';
+                
+                switch (currentFormat) {
+                    case 'table':
+                        result = generateTable(cookies);
+                        break;
+                    case 'json':
+                        result = JSON.stringify(cookies, null, 2);
+                        break;
+                    case 'python':
+                        result = 'cookies = {\n';
+                        for (const [key, value] of Object.entries(cookies)) {
+                            result += `    "${key}": "${value}",\n`;
+                        }
+                        result += '}\n\nrequests.get(url, cookies=cookies)';
+                        break;
+                    case 'javascript':
+                        result = 'const cookies = {\n';
+                        for (const [key, value] of Object.entries(cookies)) {
+                            result += `    "${key}": "${value}",\n`;
+                        }
+                        result += '};\n\n// 设置Cookie到document\n';
+                        for (const [key, value] of Object.entries(cookies)) {
+                            result += `document.cookie = "${key}=${value}; path=/";\n`;
+                        }
+                        break;
+                }
+                
+                if (currentFormat === 'table') {
+                    document.getElementById('cookieOutput').innerHTML = result;
+                } else {
+                    document.getElementById('cookieOutput').textContent = result;
+                }
+                
+                showMessage(`成功解析 ${Object.keys(cookies).length} 个Cookie！`);
+            } catch (error) {
+                showMessage('解析失败：' + error.message, 'error');
+            }
+        }
+        
+        function generateTable(cookies) {
+            let html = `<table class="cookie-table">
+                <thead>
+                    <tr>
+                        <th>Cookie名称</th>
+                        <th>Cookie值</th>
+                        <th>值长度</th>
+                        <th>可能用途</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            for (const [key, value] of Object.entries(cookies)) {
+                const purpose = guessCookiePurpose(key);
+                html += `
+                    <tr>
+                        <td><strong>${key}</strong></td>
+                        <td>${value.length > 50 ? value.substring(0, 50) + '...' : value}</td>
+                        <td>${value.length}</td>
+                        <td>${purpose}</td>
+                    </tr>`;
+            }
+            
+            html += '</tbody></table>';
+            
+            // 添加统计信息
+            html += `<div style="margin-top: 15px; padding: 10px; background: #f0f8ff; border-radius: 5px;">
+                <strong>统计信息:</strong><br>
+                Cookie总数: ${Object.keys(cookies).length}<br>
+                总长度: ${Object.values(cookies).join('').length} 字符
+            </div>`;
+            
+            return html;
+        }
+        
+        function guessCookiePurpose(key) {
+            const lowerKey = key.toLowerCase();
+            
+            if (lowerKey.includes('session')) return '会话管理';
+            if (lowerKey.includes('csrf') || lowerKey.includes('token')) return '安全令牌';
+            if (lowerKey.includes('user') || lowerKey.includes('uid')) return '用户标识';
+            if (lowerKey.includes('auth')) return '身份认证';
+            if (lowerKey.includes('login')) return '登录状态';
+            if (lowerKey.includes('lang') || lowerKey.includes('language')) return '语言设置';
+            if (lowerKey.includes('theme')) return '主题设置';
+            if (lowerKey.includes('cart')) return '购物车';
+            if (lowerKey.includes('track') || lowerKey.includes('analytics')) return '数据追踪';
+            if (lowerKey.includes('ad') || lowerKey.includes('marketing')) return '广告营销';
+            
+            return '未知用途';
+        }
+        
+        function clearAll() {
+            document.getElementById('cookieInput').value = '';
+            document.getElementById('cookieOutput').textContent = '解析结果将在这里显示...';
+        }
+        
+        // 示例数据
+        document.getElementById('cookieInput').value = `sessionid=abc123def456; csrftoken=xyz789uvw012; user_id=12345; username=zhangsan; theme=dark; language=zh-CN; cart_items=3; last_visit=2024-07-22`;
+    </script>
+</body>
+</html> 

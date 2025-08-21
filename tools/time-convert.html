@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间转换 - Spider</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea'/><stop offset='50%' style='stop-color:%23764ba2'/><stop offset='100%' style='stop-color:%23fa709a'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23grad)'/><g fill='white'><circle cx='50' cy='40' r='8'/><circle cx='35' cy='35' r='3'/><circle cx='65' cy='35' r='3'/><circle cx='30' cy='50' r='2'/><circle cx='70' cy='50' r='2'/><circle cx='35' cy='65' r='2'/><circle cx='65' cy='65' r='2'/><path d='M35 35L25 25M65 35L75 25M30 50L20 50M70 50L80 50M35 65L25 75M65 65L75 75M40 30L30 20M60 30L70 20' stroke='white' stroke-width='2' fill='none'/></g></svg>">
+<link rel="stylesheet" type="text/css" href="css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .tool-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .current-time {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .current-time h3 {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .current-time .time-display {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .current-time .timestamp-display {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .converter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .converter-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #fcb69f;
+            box-shadow: 0 0 0 3px rgba(252, 182, 159, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(252, 182, 159, 0.3);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #ffffff;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .result-area {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 60px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 14px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .format-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .format-btn {
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .format-btn.active {
+            border-color: #fcb69f;
+            background: #ffecd2;
+            color: #ffffff;
+        }
+
+        .format-btn:hover {
+            border-color: #fcb69f;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .success-message {
+            background: #c6f6d5;
+            color: #2f855a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #38a169;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #718096;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: color 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            color: #ffffff;
+        }
+
+        .result-container {
+            position: relative;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .converter-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .format-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-btn">
+        <i class="fas fa-arrow-left"></i>
+        返回首页
+    </a>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-clock"></i> 时间转换工具</h1>
+            <p>时间戳与日期格式互相转换</p>
+        </div>
+
+        <div class="tool-container">
+            <div class="current-time">
+                <h3><i class="fas fa-clock"></i> 当前时间</h3>
+                <div class="time-display" id="currentTime"></div>
+                <div class="timestamp-display" id="currentTimestamp"></div>
+            </div>
+
+            <div class="converter-grid">
+                <!-- 时间戳转日期 -->
+                <div class="converter-section">
+                    <div class="section-title">
+                        <i class="fas fa-arrow-right"></i>
+                        时间戳转日期
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">时间戳（秒或毫秒）</label>
+                        <input type="text" id="timestampInput" class="input-field" placeholder="请输入时间戳，如：1640995200">
+                    </div>
+                    
+                    <div class="format-options">
+                        <button class="format-btn active" onclick="setTimestampUnit('seconds')">秒(s)</button>
+                        <button class="format-btn" onclick="setTimestampUnit('milliseconds')">毫秒(ms)</button>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="convertTimestamp()">
+                        <i class="fas fa-magic"></i>
+                        转换为日期
+                    </button>
+                    
+                    <div class="result-container">
+                        <div class="result-area" id="timestampResult">转换结果将在这里显示...</div>
+                        <button class="copy-btn" onclick="copyResult('timestampResult')" title="复制结果">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 日期转时间戳 -->
+                <div class="converter-section">
+                    <div class="section-title">
+                        <i class="fas fa-arrow-left"></i>
+                        日期转时间戳
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">日期时间</label>
+                        <input type="datetime-local" id="datetimeInput" class="input-field">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">或输入日期字符串</label>
+                        <input type="text" id="dateStringInput" class="input-field" placeholder="如：2024-01-01 12:00:00">
+                    </div>
+                    
+                    <div class="format-options">
+                        <button class="format-btn active" onclick="setOutputUnit('seconds')">输出秒(s)</button>
+                        <button class="format-btn" onclick="setOutputUnit('milliseconds')">输出毫秒(ms)</button>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="convertDate()">
+                        <i class="fas fa-magic"></i>
+                        转换为时间戳
+                    </button>
+                    
+                    <div class="result-container">
+                        <div class="result-area" id="dateResult">转换结果将在这里显示...</div>
+                        <button class="copy-btn" onclick="copyResult('dateResult')" title="复制结果">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="messageArea"></div>
+        </div>
+    </div>
+
+    <script>
+        let timestampUnit = 'seconds';
+        let outputUnit = 'seconds';
+
+        function showMessage(message, type = 'success') {
+            const messageArea = document.getElementById('messageArea');
+            const messageClass = type === 'error' ? 'error-message' : 'success-message';
+            messageArea.innerHTML = `<div class="${messageClass}">${message}</div>`;
+            
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 3000);
+        }
+
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            const timestamp = Math.floor(now.getTime() / 1000);
+            
+            document.getElementById('currentTime').textContent = timeString;
+            document.getElementById('currentTimestamp').textContent = `时间戳: ${timestamp}`;
+        }
+
+        function setTimestampUnit(unit) {
+            timestampUnit = unit;
+            document.querySelectorAll('.converter-section:first-child .format-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function setOutputUnit(unit) {
+            outputUnit = unit;
+            document.querySelectorAll('.converter-section:last-child .format-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function convertTimestamp() {
+            const input = document.getElementById('timestampInput').value.trim();
+            const result = document.getElementById('timestampResult');
+            
+            if (!input) {
+                showMessage('请输入时间戳', 'error');
+                return;
+            }
+            
+            if (!/^\d+$/.test(input)) {
+                showMessage('时间戳格式错误，请输入数字', 'error');
+                return;
+            }
+            
+            try {
+                let timestamp = parseInt(input);
+                
+                // 根据单位转换为毫秒
+                if (timestampUnit === 'seconds') {
+                    timestamp = timestamp * 1000;
+                }
+                
+                const date = new Date(timestamp);
+                
+                if (isNaN(date.getTime())) {
+                    throw new Error('无效的时间戳');
+                }
+                
+                const formats = {
+                    '标准格式': date.toLocaleString('zh-CN'),
+                    'ISO格式': date.toISOString(),
+                    '日期': date.toLocaleDateString('zh-CN'),
+                    '时间': date.toLocaleTimeString('zh-CN'),
+                    'UTC': date.toUTCString()
+                };
+                
+                let resultHTML = '';
+                for (const [label, value] of Object.entries(formats)) {
+                    resultHTML += `<div><strong>${label}:</strong> ${value}</div>`;
+                }
+                
+                result.innerHTML = resultHTML;
+                showMessage('时间戳转换成功！');
+                
+            } catch (error) {
+                showMessage(`转换失败: ${error.message}`, 'error');
+                result.textContent = '转换失败，请检查时间戳格式';
+            }
+        }
+
+        function convertDate() {
+            const datetimeInput = document.getElementById('datetimeInput').value;
+            const dateStringInput = document.getElementById('dateStringInput').value.trim();
+            const result = document.getElementById('dateResult');
+            
+            let dateValue = datetimeInput || dateStringInput;
+            
+            if (!dateValue) {
+                showMessage('请输入日期时间', 'error');
+                return;
+            }
+            
+            try {
+                let date;
+                
+                if (datetimeInput) {
+                    date = new Date(datetimeInput);
+                } else {
+                    // 尝试解析各种日期格式
+                    date = new Date(dateStringInput);
+                }
+                
+                if (isNaN(date.getTime())) {
+                    throw new Error('无效的日期格式');
+                }
+                
+                const timestampMs = date.getTime();
+                const timestampS = Math.floor(timestampMs / 1000);
+                
+                let resultHTML = '';
+                if (outputUnit === 'seconds') {
+                    resultHTML = `
+                        <div><strong>时间戳(秒):</strong> ${timestampS}</div>
+                        <div><strong>时间戳(毫秒):</strong> ${timestampMs}</div>
+                    `;
+                } else {
+                    resultHTML = `
+                        <div><strong>时间戳(毫秒):</strong> ${timestampMs}</div>
+                        <div><strong>时间戳(秒):</strong> ${timestampS}</div>
+                    `;
+                }
+                
+                resultHTML += `<div><strong>日期:</strong> ${date.toLocaleString('zh-CN')}</div>`;
+                
+                result.innerHTML = resultHTML;
+                showMessage('日期转换成功！');
+                
+            } catch (error) {
+                showMessage(`转换失败: ${error.message}`, 'error');
+                result.textContent = '转换失败，请检查日期格式';
+            }
+        }
+
+        function copyResult(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            if (text === '转换结果将在这里显示...') {
+                showMessage('没有可复制的内容', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('复制成功！');
+            }).catch(() => {
+                showMessage('复制失败', 'error');
+            });
+        }
+
+        // 初始化
+        updateCurrentTime();
+        setInterval(updateCurrentTime, 1000);
+        
+        // 设置默认日期时间为当前时间
+        const now = new Date();
+        const localISOTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, -1);
+        document.getElementById('datetimeInput').value = localISOTime;
+        
+        // 示例数据
+        document.getElementById('timestampInput').value = '1640995200';
+        document.getElementById('dateStringInput').value = '2024-07-22 17:30:00';
+    </script>
+</body>
+</html> 

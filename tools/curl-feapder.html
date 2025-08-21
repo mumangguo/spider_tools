@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>curl转feapder - Spider</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea'/><stop offset='50%' style='stop-color:%23764ba2'/><stop offset='100%' style='stop-color:%23fa709a'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23grad)'/><g fill='white'><circle cx='50' cy='40' r='8'/><circle cx='35' cy='35' r='3'/><circle cx='65' cy='35' r='3'/><circle cx='30' cy='50' r='2'/><circle cx='70' cy='50' r='2'/><circle cx='35' cy='65' r='2'/><circle cx='65' cy='65' r='2'/><path d='M35 35L25 25M65 35L75 25M30 50L20 50M70 50L80 50M35 65L25 75M65 65L75 75M40 30L30 20M60 30L70 20' stroke='white' stroke-width='2' fill='none'/></g></svg>">
+<link rel="stylesheet" type="text/css" href="css/all.min.css">
+<link rel="stylesheet" type="text/css" href="css/prism-tomorrow.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #e2e8f0; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 15px; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); transition: all 0.3s ease; }
+        .back-btn:hover { background: rgba(255,255,255,0.3); }
+        .tool-container { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .textarea { width: 100%; min-height: 150px; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-family: monospace; font-size: 14px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin: 10px 5px; }
+        .btn-primary { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
+        .output-area { background: #1a202c; color: #e2e8f0; border-radius: 10px; overflow: hidden; }
+        pre { margin: 0; padding: 15px; overflow-x: auto; white-space: pre-wrap; }
+        .success-message { background: #c6f6d5; color: #2f855a; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .error-message { background: #fed7d7; color: #c53030; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-btn"><i class="fas fa-arrow-left"></i> 返回首页</a>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-spider"></i> curl转feapder工具</h1>
+            <p>将curl命令转换为feapder爬虫框架代码</p>
+        </div>
+        <div class="tool-container">
+            <h3><i class="fas fa-terminal"></i> 输入curl命令</h3>
+            <textarea id="curlInput" class="textarea" placeholder="请输入curl命令"></textarea>
+            <button class="btn btn-primary" onclick="convertCurl()"><i class="fas fa-magic"></i> 转换</button>
+            <button class="btn" onclick="clearAll()">清空</button>
+            <div id="messageArea"></div>
+            <h3><i class="fas fa-spider"></i> feapder代码</h3>
+            <div class="output-area"><pre id="feapderOutput">转换结果将在这里显示...</pre></div>
+        </div>
+    </div>
+<script src="js/prism-core.min.js"></script>
+<script src="js/prism-python.min.js"></script>
+    <script>
+        function showMessage(msg, type='success') {
+            document.getElementById('messageArea').innerHTML = `<div class="${type}-message">${msg}</div>`;
+            setTimeout(() => document.getElementById('messageArea').innerHTML = '', 3000);
+        }
+        function convertCurl() {
+            const input = document.getElementById('curlInput').value.trim();
+            if (!input || !input.startsWith('curl')) {
+                showMessage('请输入有效的curl命令', 'error');
+                return;
+            }
+            // 简化的转换逻辑
+            const code = `import feapder
+
+class MySpider(feapder.AirSpider):
+    def start_requests(self):
+        yield feapder.Request(
+            url="${extractUrl(input)}",
+            headers=${extractHeaders(input)},
+            method="${extractMethod(input)}",
+            data=${extractData(input)},
+            callback=self.parse
+        )
+    
+    def parse(self, request, response):
+        print(response.text)
+
+if __name__ == "__main__":
+    MySpider().start()`;
+            
+            document.getElementById('feapderOutput').textContent = code;
+            showMessage('转换成功！');
+        }
+        function extractUrl(cmd) { const match = cmd.match(/curl\s+['"]*([^'"\\s]+)/); return match ? match[1] : 'http://example.com'; }
+        function extractMethod(cmd) { const match = cmd.match(/-X\s+(\w+)/i); return match ? match[1].toUpperCase() : 'GET'; }
+        function extractHeaders(cmd) { return '{}'; } // 简化实现
+        function extractData(cmd) { return 'None'; } // 简化实现
+        function clearAll() { document.getElementById('curlInput').value = ''; document.getElementById('feapderOutput').textContent = '转换结果将在这里显示...'; }
+        document.getElementById('curlInput').value = `curl -X POST https://httpbin.org/post -H "Content-Type: application/json" -d '{"test":"data"}'`;
+    </script>
+</body>
+</html> 

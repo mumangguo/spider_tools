@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>curl转requests - Spider</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea'/><stop offset='50%' style='stop-color:%23764ba2'/><stop offset='100%' style='stop-color:%23fa709a'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23grad)'/><g fill='white'><circle cx='50' cy='40' r='8'/><circle cx='35' cy='35' r='3'/><circle cx='65' cy='35' r='3'/><circle cx='30' cy='50' r='2'/><circle cx='70' cy='50' r='2'/><circle cx='35' cy='65' r='2'/><circle cx='65' cy='65' r='2'/><path d='M35 35L25 25M65 35L75 25M30 50L20 50M70 50L80 50M35 65L25 75M65 65L75 75M40 30L30 20M60 30L70 20' stroke='white' stroke-width='2' fill='none'/></g></svg>">
+<link rel="stylesheet" type="text/css" href="css/all.min.css">
+<link rel="stylesheet" type="text/css" href="css/prism-tomorrow.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .tool-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .input-section, .output-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #f7fafc;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: rgba(102, 126, 234, 0.6);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .output-area {
+            background: #1a202c;
+            color: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: #a0aec0;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: color 0.3s ease;
+            margin-left: auto;
+        }
+
+        .copy-btn:hover {
+            color: #e2e8f0;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .success-message {
+            background: #c6f6d5;
+            color: #2f855a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #38a169;
+        }
+
+        pre {
+            margin: 0;
+            padding: 15px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .example-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .example-title {
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .example-code {
+            background: #ffffff;
+            color: #e2e8f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+
+        .language-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .lang-btn {
+            padding: 12px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+            color: #e2e8f0;
+        }
+
+        .lang-btn.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .lang-btn:hover {
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+            
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+            
+            .language-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-btn">
+        <i class="fas fa-arrow-left"></i>
+        返回首页
+    </a>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-exchange-alt"></i> curl转代码工具</h1>
+            <p>将curl命令转换为多种编程语言代码</p>
+        </div>
+
+        <div class="tool-container">
+            <div class="input-section">
+                <div class="section-title">
+                    <i class="fas fa-terminal"></i>
+                    输入curl命令
+                </div>
+                <textarea 
+                    id="curlInput" 
+                    class="textarea" 
+                    placeholder="请输入curl命令，例如：curl -X POST https://api.example.com/data -H 'Content-Type: application/json' -d '{\"key\":\"value\"}'"
+                ></textarea>
+            </div>
+
+            <div class="language-options">
+                <button class="lang-btn active" onclick="setLanguage('python')">Python</button>
+                <button class="lang-btn" onclick="setLanguage('javascript')">JavaScript</button>
+                <button class="lang-btn" onclick="setLanguage('php')">PHP</button>
+                <button class="lang-btn" onclick="setLanguage('java')">Java</button>
+                <button class="lang-btn" onclick="setLanguage('go')">Go</button>
+                <button class="lang-btn" onclick="setLanguage('csharp')">C#</button>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-primary" onclick="convertCurl()">
+                    <i class="fas fa-magic"></i>
+                    转换
+                </button>
+                <button class="btn btn-secondary" onclick="clearAll()">
+                    <i class="fas fa-trash"></i>
+                    清空
+                </button>
+            </div>
+
+            <div id="messageArea"></div>
+
+            <div class="output-section">
+                <div class="section-title">
+                    <i class="fas fa-code" id="outputIcon"></i>
+                    <span id="outputTitle">Python代码</span>
+                    <button class="copy-btn" onclick="copyOutput()" title="复制代码">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                <div class="output-area">
+                    <pre id="requestsOutput">转换结果将在这里显示...</pre>
+                </div>
+            </div>
+
+            <div class="example-section">
+                <div class="example-title">
+                    <i class="fas fa-lightbulb"></i>
+                    示例curl命令
+                </div>
+                <div class="example-code">
+curl -X POST https://httpbin.org/post \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer token123" \
+  -d '{"name":"张三","age":25}'
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 简化的语法高亮，避免复杂依赖 -->
+    <script>
+        // 简单的语法高亮替代方案
+        window.Prism = {
+            highlightElement: function(element) {
+                // 简单的代码美化，不依赖复杂的解析器
+                if (element && element.textContent) {
+                    element.style.fontFamily = 'Monaco, Menlo, Consolas, monospace';
+                    element.style.fontSize = '14px';
+                    element.style.lineHeight = '1.5';
+                }
+            }
+        };
+    </script>
+    <script>
+        let currentLanguage = 'python';
+
+        function showMessage(message, type = 'success') {
+            const messageArea = document.getElementById('messageArea');
+            const messageClass = type === 'error' ? 'error-message' : 'success-message';
+            messageArea.innerHTML = `<div class="${messageClass}">${message}</div>`;
+            
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 3000);
+        }
+
+        function setLanguage(language) {
+            currentLanguage = language;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 更新输出标题和图标
+            const outputTitle = document.getElementById('outputTitle');
+            const outputIcon = document.getElementById('outputIcon');
+            
+            const languageConfig = {
+                python: { title: 'Python代码', icon: 'fab fa-python' },
+                javascript: { title: 'JavaScript代码', icon: 'fab fa-js-square' },
+                php: { title: 'PHP代码', icon: 'fab fa-php' },
+                java: { title: 'Java代码', icon: 'fab fa-java' },
+                go: { title: 'Go代码', icon: 'fas fa-code' },
+                csharp: { title: 'C#代码', icon: 'fas fa-code' }
+            };
+            
+            const config = languageConfig[language];
+            outputTitle.textContent = config.title;
+            outputIcon.className = config.icon;
+        }
+
+        function parseCurl(curlCommand) {
+            try {
+                const result = {
+                    method: 'GET',
+                    url: '',
+                    headers: {},
+                    data: null,
+                    params: {}
+                };
+
+                if (!curlCommand || typeof curlCommand !== 'string') {
+                    throw new Error('无效的curl命令');
+                }
+
+                // 清理命令，移除换行符和多余空格
+                let cmd = curlCommand.replace(/\\\s*\n/g, ' ').replace(/\s+/g, ' ').trim();
+                
+                // 提取URL - 改进的正则表达式
+                const urlPatterns = [
+                    /curl\s+(?:-[^\s]+\s+)*['"]([^'"]+)['"]/,  // 带引号的URL
+                    /curl\s+(?:-[^\s]+\s+)*([https?:\/\/][^\s]+)/,  // HTTP URL
+                    /curl\s+(?:-[^\s]+\s+)*([^\s-]+\.[^\s]+)/  // 域名格式
+                ];
+                
+                let urlFound = false;
+                for (const pattern of urlPatterns) {
+                    const urlMatch = cmd.match(pattern);
+                    if (urlMatch) {
+                        result.url = urlMatch[1];
+                        urlFound = true;
+                        break;
+                    }
+                }
+                
+                if (!urlFound) {
+                    // 最后尝试简单提取
+                    const simpleMatch = cmd.match(/curl\s+([^\s]+)/);
+                    if (simpleMatch) {
+                        result.url = simpleMatch[1];
+                    }
+                }
+                
+                if (result.url) {
+                    // 分离URL和查询参数
+                    const [baseUrl, queryString] = result.url.split('?');
+                    result.url = baseUrl;
+                    
+                    if (queryString) {
+                        try {
+                            const params = new URLSearchParams(queryString);
+                            for (const [key, value] of params) {
+                                result.params[key] = value;
+                            }
+                        } catch (e) {
+                            console.warn('查询参数解析失败:', e);
+                        }
+                    }
+                }
+
+                // 提取HTTP方法
+                const methodMatch = cmd.match(/-X\s+(\w+)/i);
+                if (methodMatch) {
+                    result.method = methodMatch[1].toUpperCase();
+                }
+
+                // 提取请求头
+                try {
+                    const headerMatches = cmd.matchAll(/-H\s+(?:'([^']+)'|"([^"]+)")/g);
+                    for (const match of headerMatches) {
+                        const header = match[1] || match[2];
+                        if (header) {
+                            const colonIndex = header.indexOf(':');
+                            if (colonIndex > 0) {
+                                const key = header.substring(0, colonIndex).trim();
+                                const value = header.substring(colonIndex + 1).trim();
+                                if (key) {
+                                    result.headers[key] = value;
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('请求头解析失败:', e);
+                }
+
+                // 提取请求体数据
+                try {
+                    const dataMatches = [
+                        ...cmd.matchAll(/-d\s+(?:'([^']+)'|"([^"]+)")/g),
+                        ...cmd.matchAll(/--data\s+(?:'([^']+)'|"([^"]+)")/g),
+                        ...cmd.matchAll(/--data-raw\s+(?:'([^']+)'|"([^"]+)")/g)
+                    ];
+                    
+                    if (dataMatches.length > 0) {
+                        const lastMatch = dataMatches[dataMatches.length - 1];
+                        result.data = lastMatch[1] || lastMatch[2];
+                    }
+                } catch (e) {
+                    console.warn('请求体数据解析失败:', e);
+                }
+
+                return result;
+            } catch (error) {
+                console.error('parseCurl错误:', error);
+                throw error;
+            }
+        }
+
+        function generateCode(parsedCurl) {
+            switch (currentLanguage) {
+                case 'python':
+                    return generatePythonCode(parsedCurl);
+                case 'javascript':
+                    return generateJavaScriptCode(parsedCurl);
+                case 'php':
+                    return generatePHPCode(parsedCurl);
+                case 'java':
+                    return generateJavaCode(parsedCurl);
+                case 'go':
+                    return generateGoCode(parsedCurl);
+                case 'csharp':
+                    return generateCSharpCode(parsedCurl);
+                default:
+                    return generatePythonCode(parsedCurl);
+            }
+        }
+
+        function generatePythonCode(parsedCurl) {
+            let code = 'import requests\n\n';
+            
+            // URL
+            code += `url = "${parsedCurl.url || ''}"\n\n`;
+            
+            // Headers
+            if (parsedCurl.headers && Object.keys(parsedCurl.headers).length > 0) {
+                code += 'headers = {\n';
+                for (const [key, value] of Object.entries(parsedCurl.headers)) {
+                    // 转义header值中的特殊字符
+                    const escapedValue = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                    code += `    "${key}": "${escapedValue}",\n`;
+                }
+                code += '}\n\n';
+            }
+            
+            // Parameters
+            if (parsedCurl.params && Object.keys(parsedCurl.params).length > 0) {
+                code += 'params = {\n';
+                for (const [key, value] of Object.entries(parsedCurl.params)) {
+                    // 转义参数值中的特殊字符
+                    const escapedValue = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                    code += `    "${key}": "${escapedValue}",\n`;
+                }
+                code += '}\n\n';
+            }
+            
+            // Data
+            if (parsedCurl.data) {
+                try {
+                    const jsonData = JSON.parse(parsedCurl.data);
+                    code += 'data = {\n';
+                    for (const [key, value] of Object.entries(jsonData)) {
+                        if (typeof value === 'string') {
+                            // 转义字符串中的特殊字符
+                            const escapedValue = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                            code += `    "${key}": "${escapedValue}",\n`;
+                        } else {
+                            code += `    "${key}": ${JSON.stringify(value)},\n`;
+                        }
+                    }
+                    code += '}\n\n';
+                } catch (e) {
+                    // 转义引号和其他特殊字符以避免Python字符串问题
+                    const escapedData = parsedCurl.data.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                    code += `data = "${escapedData}"\n\n`;
+                }
+            }
+            
+            // Request call
+            code += `response = requests.${(parsedCurl.method || 'get').toLowerCase()}(url`;
+            
+            const requestArgs = [];
+            if (parsedCurl.headers && Object.keys(parsedCurl.headers).length > 0) {
+                requestArgs.push('headers=headers');
+            }
+            if (parsedCurl.params && Object.keys(parsedCurl.params).length > 0) {
+                requestArgs.push('params=params');
+            }
+            if (parsedCurl.data) {
+                const contentType = parsedCurl.headers && parsedCurl.headers['Content-Type'];
+                if (contentType && contentType.includes('json')) {
+                    requestArgs.push('json=data');
+                } else {
+                    requestArgs.push('data=data');
+                }
+            }
+            
+            if (requestArgs.length > 0) {
+                code += ', ' + requestArgs.join(', ');
+            }
+            
+            code += ')\n\n';
+            code += 'print(response.status_code)\n';
+            code += 'print(response.text)';
+            
+            return code;
+        }
+
+        function generateJavaScriptCode(parsedCurl) {
+            let code = '';
+            
+            // Headers
+            if (parsedCurl.headers && Object.keys(parsedCurl.headers).length > 0) {
+                code += 'const headers = {\n';
+                for (const [key, value] of Object.entries(parsedCurl.headers)) {
+                    // 转义header值中的特殊字符
+                    const escapedValue = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                    code += `    "${key}": "${escapedValue}",\n`;
+                }
+                code += '};\n\n';
+            }
+            
+            // Options object
+            code += 'const options = {\n';
+            code += `    method: "${parsedCurl.method || 'GET'}",\n`;
+            
+            if (parsedCurl.headers && Object.keys(parsedCurl.headers).length > 0) {
+                code += '    headers: headers,\n';
+            }
+            
+            if (parsedCurl.data) {
+                const contentType = parsedCurl.headers && parsedCurl.headers['Content-Type'];
+                if (contentType && contentType.includes('json')) {
+                    try {
+                        // 验证是否为有效JSON
+                        JSON.parse(parsedCurl.data);
+                        code += `    body: JSON.stringify(${parsedCurl.data}),\n`;
+                    } catch (e) {
+                        const escapedData = parsedCurl.data.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                        code += `    body: "${escapedData}",\n`;
+                    }
+                } else {
+                    const escapedData = parsedCurl.data.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                    code += `    body: "${escapedData}",\n`;
+                }
+            }
+            
+            code += '};\n\n';
+            
+            // URL with params
+            let url = parsedCurl.url || '';
+            if (parsedCurl.params && Object.keys(parsedCurl.params).length > 0) {
+                const params = new URLSearchParams();
+                for (const [key, value] of Object.entries(parsedCurl.params)) {
+                    params.append(key, value);
+                }
+                url += '?' + params.toString();
+            }
+            
+            code += `const url = "${url}";\n\n`;
+            code += 'fetch(url, options)\n';
+            code += '    .then(response => response.text())\n';
+            code += '    .then(data => console.log(data))\n';
+            code += '    .catch(error => console.error("Error:", error));';
+            
+            return code;
+        }
+
+        function generatePHPCode(parsedCurl) {
+            let code = '<?php\n\n';
+            
+            code += '$ch = curl_init();\n\n';
+            
+            // URL with params
+            let url = parsedCurl.url || '';
+            if (parsedCurl.params && Object.keys(parsedCurl.params).length > 0) {
+                const params = new URLSearchParams();
+                for (const [key, value] of Object.entries(parsedCurl.params)) {
+                    params.append(key, value);
+                }
+                url += '?' + params.toString();
+            }
+            
+            code += `curl_setopt($ch, CURLOPT_URL, "${url}");\n`;
+            code += 'curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n';
+            code += `curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "${parsedCurl.method || 'GET'}");\n`;
+            
+            // Headers
+            if (parsedCurl.headers && Object.keys(parsedCurl.headers).length > 0) {
+                code += '\n$headers = [\n';
+                for (const [key, value] of Object.entries(parsedCurl.headers)) {
+                    code += `    "${key}: ${value}",\n`;
+                }
+                code += '];\n';
+                code += 'curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);\n';
+            }
+            
+            // Data
+            if (parsedCurl.data) {
+                // 转义特殊字符以避免PHP字符串问题
+                const escapedData = parsedCurl.data.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                code += `\n$data = '${escapedData}';\n`;
+                code += 'curl_setopt($ch, CURLOPT_POSTFIELDS, $data);\n';
+            }
+            
+            code += '\n$response = curl_exec($ch);\n';
+            code += '$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);\n';
+            code += 'curl_close($ch);\n\n';
+            code += 'echo "HTTP Code: " . $httpCode . "\\n";\n';
+            code += 'echo $response;\n';
+            code += '?>';
+            
+            return code;
+        }
+
+        function generateJavaCode(parsedCurl) {
+            let code = 'import java.io.*;\n';
+            code += 'import java.net.*;\n';
+            code += 'import java.nio.charset.StandardCharsets;\n\n';
+            code += 'public class HttpRequest {\n';
+            code += '    public static void main(String[] args) throws Exception {\n';
+            
+            // URL with params
+            let url = parsedCurl.url || '';
+            if (parsedCurl.params && Object.keys(parsedCurl.params).length > 0) {
+                const params = new URLSearchParams();
+                for (const [key, value] of Object.entries(parsedCurl.params)) {
+                    params.append(key, value);
+                }
+                url += '?' + params.toString();
+            }
+            
+            code += `        URL url = new URL("${url}");\n`;
+            code += '        HttpURLConnection conn = (HttpURLConnection) url.openConnection();\n';
+            code += `        conn.setRequestMethod("${parsedCurl.method || 'GET'}");\n`;
+            
+            // Headers
+            if (parsedCurl.headers && Object.keys(parsedCurl.headers).length > 0) {
+                code += '\n        // Set headers\n';
+                for (const [key, value] of Object.entries(parsedCurl.headers)) {
+                    code += `        conn.setRequestProperty("${key}", "${value}");\n`;
+                }
+            }
+            
+            // Data
+            if (parsedCurl.data) {
+                code += '\n        // Send data\n';
+                code += '        conn.setDoOutput(true);\n';
+                // 转义特殊字符以避免Java字符串问题
+                const escapedData = parsedCurl.data.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                code += `        String data = "${escapedData}";\n`;
+                code += '        try (OutputStream os = conn.getOutputStream()) {\n';
+                code += '            byte[] input = data.getBytes(StandardCharsets.UTF_8);\n';
+                code += '            os.write(input, 0, input.length);\n';
+                code += '        }\n';
+            }
+            
+            code += '\n        // Get response\n';
+            code += '        int responseCode = conn.getResponseCode();\n';
+            code += '        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));\n';
+            code += '        String inputLine;\n';
+            code += '        StringBuilder response = new StringBuilder();\n';
+            code += '        while ((inputLine = in.readLine()) != null) {\n';
+            code += '            response.append(inputLine);\n';
+            code += '        }\n';
+            code += '        in.close();\n\n';
+            code += '        System.out.println("Response Code: " + responseCode);\n';
+            code += '        System.out.println(response.toString());\n';
+            code += '    }\n';
+            code += '}';
+            
+            return code;
+        }
+
+        function generateGoCode(parsedCurl) {
+            let code = 'package main\n\n';
+            code += 'import (\n';
+            code += '    "fmt"\n';
+            code += '    "io"\n';
+            code += '    "net/http"\n';
+            code += '    "strings"\n';
+            code += ')\n\n';
+            code += 'func main() {\n';
+            
+            // URL with params
+            let url = parsedCurl.url || '';
+            if (parsedCurl.params && Object.keys(parsedCurl.params).length > 0) {
+                const params = new URLSearchParams();
+                for (const [key, value] of Object.entries(parsedCurl.params)) {
+                    params.append(key, value);
+                }
+                url += '?' + params.toString();
+            }
+            
+            code += `    url := "${url}"\n`;
+            
+            // Data
+            let dataVar = 'nil';
+            if (parsedCurl.data) {
+                // 转义特殊字符以避免Go字符串问题
+                const escapedData = parsedCurl.data.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                code += `    data := strings.NewReader("${escapedData}")\n`;
+                dataVar = 'data';
+            }
+            
+            code += `    req, err := http.NewRequest("${parsedCurl.method || 'GET'}", url, ${dataVar})\n`;
+            code += '    if err != nil {\n';
+            code += '        panic(err)\n';
+            code += '    }\n\n';
+            
+            // Headers
+            if (parsedCurl.headers && Object.keys(parsedCurl.headers).length > 0) {
+                code += '    // Set headers\n';
+                for (const [key, value] of Object.entries(parsedCurl.headers)) {
+                    code += `    req.Header.Set("${key}", "${value}")\n`;
+                }
+                code += '\n';
+            }
+            
+            code += '    client := &http.Client{}\n';
+            code += '    resp, err := client.Do(req)\n';
+            code += '    if err != nil {\n';
+            code += '        panic(err)\n';
+            code += '    }\n';
+            code += '    defer resp.Body.Close()\n\n';
+            code += '    body, err := io.ReadAll(resp.Body)\n';
+            code += '    if err != nil {\n';
+            code += '        panic(err)\n';
+            code += '    }\n\n';
+            code += '    fmt.Println("Status:", resp.Status)\n';
+            code += '    fmt.Println(string(body))\n';
+            code += '}';
+            
+            return code;
+        }
+
+        function generateCSharpCode(parsedCurl) {
+            let code = 'using System;\n';
+            code += 'using System.Net.Http;\n';
+            code += 'using System.Text;\n';
+            code += 'using System.Threading.Tasks;\n\n';
+            code += 'class Program\n';
+            code += '{\n';
+            code += '    static async Task Main(string[] args)\n';
+            code += '    {\n';
+            code += '        using var client = new HttpClient();\n\n';
+            
+            // Headers
+            if (parsedCurl.headers && Object.keys(parsedCurl.headers).length > 0) {
+                code += '        // Set headers\n';
+                for (const [key, value] of Object.entries(parsedCurl.headers)) {
+                    code += `        client.DefaultRequestHeaders.Add("${key}", "${value}");\n`;
+                }
+                code += '\n';
+            }
+            
+            // URL with params
+            let url = parsedCurl.url || '';
+            if (parsedCurl.params && Object.keys(parsedCurl.params).length > 0) {
+                const params = new URLSearchParams();
+                for (const [key, value] of Object.entries(parsedCurl.params)) {
+                    params.append(key, value);
+                }
+                url += '?' + params.toString();
+            }
+            
+            code += `        var url = "${url}";\n`;
+            
+            // Request
+            const method = parsedCurl.method || 'GET';
+            if (method === 'GET') {
+                code += '        var response = await client.GetAsync(url);\n';
+            } else if (method === 'POST') {
+                if (parsedCurl.data) {
+                    // 转义特殊字符以避免C#字符串问题
+                    const escapedData = parsedCurl.data.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                    code += `        var content = new StringContent("${escapedData}", Encoding.UTF8, "application/json");\n`;
+                    code += '        var response = await client.PostAsync(url, content);\n';
+                } else {
+                    code += '        var response = await client.PostAsync(url, null);\n';
+                }
+            } else {
+                code += `        var request = new HttpRequestMessage(HttpMethod.${method.charAt(0).toUpperCase() + method.slice(1).toLowerCase()}, url);\n`;
+                if (parsedCurl.data) {
+                    // 转义特殊字符以避免C#字符串问题
+                    const escapedData = parsedCurl.data.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+                    code += `        request.Content = new StringContent("${escapedData}", Encoding.UTF8, "application/json");\n`;
+                }
+                code += '        var response = await client.SendAsync(request);\n';
+            }
+            
+            code += '\n        Console.WriteLine($"Status: {response.StatusCode}");\n';
+            code += '        var responseBody = await response.Content.ReadAsStringAsync();\n';
+            code += '        Console.WriteLine(responseBody);\n';
+            code += '    }\n';
+            code += '}';
+            
+            return code;
+        }
+
+        function convertCurl() {
+            const input = document.getElementById('curlInput').value.trim();
+            const output = document.getElementById('requestsOutput');
+            
+            if (!input) {
+                showMessage('请输入curl命令', 'error');
+                return;
+            }
+            
+            if (!input.startsWith('curl')) {
+                showMessage('请输入有效的curl命令', 'error');
+                return;
+            }
+            
+            try {
+                const parsed = parseCurl(input);
+                if (!parsed || !parsed.url) {
+                    throw new Error('无法解析URL');
+                }
+                
+                const code = generateCode(parsed);
+                if (!code) {
+                    throw new Error('代码生成失败');
+                }
+                
+                output.textContent = code;
+                
+                // 设置语法高亮
+                const languageMap = {
+                    python: 'language-python',
+                    javascript: 'language-javascript',
+                    php: 'language-php',
+                    java: 'language-java',
+                    go: 'language-go',
+                    csharp: 'language-csharp'
+                };
+                
+                output.className = languageMap[currentLanguage] || 'language-python';
+                
+                // 安全的语法高亮处理
+                try {
+                    if (typeof Prism !== 'undefined' && Prism.highlightElement) {
+                        Prism.highlightElement(output);
+                    }
+                } catch (highlightError) {
+                    console.warn('语法高亮失败:', highlightError);
+                    // 即使高亮失败，代码仍然可以正常显示
+                }
+                
+                showMessage('转换成功！');
+            } catch (error) {
+                console.error('转换错误详情:', error);
+                showMessage(`转换失败: ${error.message}`, 'error');
+                output.textContent = '转换失败，请检查curl命令格式\n\n错误详情: ' + error.message;
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('curlInput').value = '';
+            document.getElementById('requestsOutput').textContent = '转换结果将在这里显示...';
+            document.getElementById('messageArea').innerHTML = '';
+        }
+
+        function copyOutput() {
+            const output = document.getElementById('requestsOutput');
+            const text = output.textContent;
+            
+            if (text === '转换结果将在这里显示...') {
+                showMessage('没有可复制的内容', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('复制成功！');
+            }).catch(() => {
+                showMessage('复制失败', 'error');
+            });
+        }
+
+        // 示例数据
+        document.getElementById('curlInput').value = `curl -X POST https://httpbin.org/post \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer token123" \\
+  -d '{"name":"张三","age":25}'`;
+    </script>
+</body>
+</html> 

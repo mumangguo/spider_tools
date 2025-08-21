@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL编码/解码 - Spider</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea'/><stop offset='50%' style='stop-color:%23764ba2'/><stop offset='100%' style='stop-color:%23fa709a'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23grad)'/><g fill='white'><circle cx='50' cy='40' r='8'/><circle cx='35' cy='35' r='3'/><circle cx='65' cy='35' r='3'/><circle cx='30' cy='50' r='2'/><circle cx='70' cy='50' r='2'/><circle cx='35' cy='65' r='2'/><circle cx='65' cy='65' r='2'/><path d='M35 35L25 25M65 35L75 25M30 50L20 50M70 50L80 50M35 65L25 75M65 65L75 75M40 30L30 20M60 30L70 20' stroke='white' stroke-width='2' fill='none'/></g></svg>">
+<link rel="stylesheet" type="text/css" href="css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .tool-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #718096;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #fa709a;
+            border-bottom-color: #fa709a;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .input-section, .output-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: #fa709a;
+            box-shadow: 0 0 0 3px rgba(250, 112, 154, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(250, 112, 154, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f7fafc;
+            color: #ffffff;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        .output-area {
+            background: #f8f9fa;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            min-height: 120px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: #718096;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: color 0.3s ease;
+            margin-left: auto;
+        }
+
+        .copy-btn:hover {
+            color: #ffffff;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .success-message {
+            background: #c6f6d5;
+            color: #2f855a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #38a169;
+        }
+
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .params-table th,
+        .params-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .params-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+            
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-btn">
+        <i class="fas fa-arrow-left"></i>
+        返回首页
+    </a>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-link"></i> URL编码/解码工具</h1>
+            <p>URL编码、解码和参数提取</p>
+        </div>
+
+        <div class="tool-container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('encode')">URL编码</button>
+                <button class="tab" onclick="switchTab('decode')">URL解码</button>
+                <button class="tab" onclick="switchTab('params')">参数提取</button>
+            </div>
+
+            <!-- URL编码 -->
+            <div id="encode" class="tab-content active">
+                <div class="input-section">
+                    <div class="section-title">
+                        <i class="fas fa-edit"></i>
+                        输入要编码的文本
+                    </div>
+                    <textarea 
+                        id="encodeInput" 
+                        class="textarea" 
+                        placeholder="请输入要编码的文本，例如：中文测试 & 特殊字符"
+                    ></textarea>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="encodeURL()">
+                        <i class="fas fa-lock"></i>
+                        编码
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearEncode()">
+                        <i class="fas fa-trash"></i>
+                        清空
+                    </button>
+                </div>
+
+                <div class="output-section">
+                    <div class="section-title">
+                        <i class="fas fa-code"></i>
+                        编码结果
+                        <button class="copy-btn" onclick="copyEncodeOutput()" title="复制结果">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div id="encodeOutput" class="output-area">编码结果将在这里显示...</div>
+                </div>
+            </div>
+
+            <!-- URL解码 -->
+            <div id="decode" class="tab-content">
+                <div class="input-section">
+                    <div class="section-title">
+                        <i class="fas fa-edit"></i>
+                        输入要解码的URL
+                    </div>
+                    <textarea 
+                        id="decodeInput" 
+                        class="textarea" 
+                        placeholder="请输入要解码的URL编码文本"
+                    ></textarea>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="decodeURL()">
+                        <i class="fas fa-unlock"></i>
+                        解码
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearDecode()">
+                        <i class="fas fa-trash"></i>
+                        清空
+                    </button>
+                </div>
+
+                <div class="output-section">
+                    <div class="section-title">
+                        <i class="fas fa-code"></i>
+                        解码结果
+                        <button class="copy-btn" onclick="copyDecodeOutput()" title="复制结果">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div id="decodeOutput" class="output-area">解码结果将在这里显示...</div>
+                </div>
+            </div>
+
+            <!-- 参数提取 -->
+            <div id="params" class="tab-content">
+                <div class="input-section">
+                    <div class="section-title">
+                        <i class="fas fa-edit"></i>
+                        输入包含参数的URL
+                    </div>
+                    <textarea 
+                        id="paramsInput" 
+                        class="textarea" 
+                        placeholder="请输入包含查询参数的URL，例如：https://example.com/search?q=关键词&page=1&size=10"
+                    ></textarea>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="extractParams()">
+                        <i class="fas fa-search"></i>
+                        提取参数
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearParams()">
+                        <i class="fas fa-trash"></i>
+                        清空
+                    </button>
+                </div>
+
+                <div class="output-section">
+                    <div class="section-title">
+                        <i class="fas fa-table"></i>
+                        参数列表
+                        <button class="copy-btn" onclick="copyParamsOutput()" title="复制参数">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div id="paramsOutput">
+                        <div class="output-area">参数提取结果将在这里显示...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="messageArea"></div>
+        </div>
+    </div>
+
+    <script>
+        function showMessage(message, type = 'success') {
+            const messageArea = document.getElementById('messageArea');
+            const messageClass = type === 'error' ? 'error-message' : 'success-message';
+            messageArea.innerHTML = `<div class="${messageClass}">${message}</div>`;
+            
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 3000);
+        }
+
+        function switchTab(tabName) {
+            // 隐藏所有选项卡内容
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // 移除所有选项卡的active类
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // 显示选中的选项卡内容
+            document.getElementById(tabName).classList.add('active');
+            
+            // 添加active类到选中的选项卡
+            event.target.classList.add('active');
+        }
+
+        function encodeURL() {
+            const input = document.getElementById('encodeInput').value;
+            const output = document.getElementById('encodeOutput');
+            
+            if (!input.trim()) {
+                showMessage('请输入要编码的文本', 'error');
+                return;
+            }
+            
+            try {
+                const encoded = encodeURIComponent(input);
+                output.textContent = encoded;
+                showMessage('编码成功！');
+            } catch (error) {
+                showMessage(`编码失败: ${error.message}`, 'error');
+            }
+        }
+
+        function decodeURL() {
+            const input = document.getElementById('decodeInput').value;
+            const output = document.getElementById('decodeOutput');
+            
+            if (!input.trim()) {
+                showMessage('请输入要解码的URL编码文本', 'error');
+                return;
+            }
+            
+            try {
+                const decoded = decodeURIComponent(input);
+                output.textContent = decoded;
+                showMessage('解码成功！');
+            } catch (error) {
+                showMessage(`解码失败: ${error.message}`, 'error');
+            }
+        }
+
+        function extractParams() {
+            const input = document.getElementById('paramsInput').value.trim();
+            const output = document.getElementById('paramsOutput');
+            
+            if (!input) {
+                showMessage('请输入包含参数的URL', 'error');
+                return;
+            }
+            
+            try {
+                let url;
+                try {
+                    url = new URL(input);
+                } catch (e) {
+                    // 如果不是完整URL，尝试添加协议
+                    url = new URL('http://' + input);
+                }
+                
+                const params = url.searchParams;
+                
+                if (params.toString() === '') {
+                    output.innerHTML = '<div class="output-area">该URL不包含查询参数</div>';
+                    showMessage('该URL不包含查询参数', 'error');
+                    return;
+                }
+                
+                let tableHTML = `
+                    <table class="params-table">
+                        <thead>
+                            <tr>
+                                <th>参数名</th>
+                                <th>参数值</th>
+                                <th>解码后的值</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                for (const [key, value] of params) {
+                    const decodedValue = decodeURIComponent(value);
+                    tableHTML += `
+                        <tr>
+                            <td>${key}</td>
+                            <td>${value}</td>
+                            <td>${decodedValue}</td>
+                        </tr>
+                    `;
+                }
+                
+                tableHTML += '</tbody></table>';
+                output.innerHTML = tableHTML;
+                showMessage('参数提取成功！');
+                
+            } catch (error) {
+                showMessage(`URL解析失败: ${error.message}`, 'error');
+                output.innerHTML = '<div class="output-area">URL解析失败，请检查URL格式</div>';
+            }
+        }
+
+        function clearEncode() {
+            document.getElementById('encodeInput').value = '';
+            document.getElementById('encodeOutput').textContent = '编码结果将在这里显示...';
+        }
+
+        function clearDecode() {
+            document.getElementById('decodeInput').value = '';
+            document.getElementById('decodeOutput').textContent = '解码结果将在这里显示...';
+        }
+
+        function clearParams() {
+            document.getElementById('paramsInput').value = '';
+            document.getElementById('paramsOutput').innerHTML = '<div class="output-area">参数提取结果将在这里显示...</div>';
+        }
+
+        function copyEncodeOutput() {
+            const output = document.getElementById('encodeOutput');
+            const text = output.textContent;
+            
+            if (text === '编码结果将在这里显示...') {
+                showMessage('没有可复制的内容', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('复制成功！');
+            }).catch(() => {
+                showMessage('复制失败', 'error');
+            });
+        }
+
+        function copyDecodeOutput() {
+            const output = document.getElementById('decodeOutput');
+            const text = output.textContent;
+            
+            if (text === '解码结果将在这里显示...') {
+                showMessage('没有可复制的内容', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('复制成功！');
+            }).catch(() => {
+                showMessage('复制失败', 'error');
+            });
+        }
+
+        function copyParamsOutput() {
+            const table = document.querySelector('.params-table');
+            if (!table) {
+                showMessage('没有可复制的内容', 'error');
+                return;
+            }
+            
+            let text = '';
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                text += `${cells[0].textContent}: ${cells[2].textContent}\n`;
+            });
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('参数复制成功！');
+            }).catch(() => {
+                showMessage('复制失败', 'error');
+            });
+        }
+
+        // 示例数据
+        document.getElementById('encodeInput').value = '中文测试 & 特殊字符 #@!';
+        document.getElementById('decodeInput').value = '%E4%B8%AD%E6%96%87%E6%B5%8B%E8%AF%95%20%26%20%E7%89%B9%E6%AE%8A%E5%AD%97%E7%AC%A6%20%23%40%21';
+        document.getElementById('paramsInput').value = 'https://example.com/search?q=爬虫工具&page=1&size=10&category=开发工具';
+    </script>
+</body>
+</html> 

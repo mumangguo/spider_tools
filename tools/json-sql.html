@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON转SQL - Spider</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea'/><stop offset='50%' style='stop-color:%23764ba2'/><stop offset='100%' style='stop-color:%23fa709a'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23grad)'/><g fill='white'><circle cx='50' cy='40' r='8'/><circle cx='35' cy='35' r='3'/><circle cx='65' cy='35' r='3'/><circle cx='30' cy='50' r='2'/><circle cx='70' cy='50' r='2'/><circle cx='35' cy='65' r='2'/><circle cx='65' cy='65' r='2'/><path d='M35 35L25 25M65 35L75 25M30 50L20 50M70 50L80 50M35 65L25 75M65 65L75 75M40 30L30 20M60 30L70 20' stroke='white' stroke-width='2' fill='none'/></g></svg>">
+<link rel="stylesheet" type="text/css" href="css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #e2e8f0; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 15px; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); transition: all 0.3s ease; }
+        .back-btn:hover { background: rgba(255,255,255,0.3); }
+        .tool-container { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .input-group { margin-bottom: 20px; }
+        .label { display: block; margin-bottom: 8px; font-weight: 600; color: #ffffff; }
+        .textarea { width: 100%; min-height: 200px; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-family: monospace; font-size: 14px; resize: vertical; }
+        .input-field { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
+        .textarea:focus, .input-field:focus { outline: none; border-color: #43e97b; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin: 10px 5px; }
+        .btn-primary { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
+        .output-area { background: #1a202c; color: #e2e8f0; border-radius: 10px; padding: 15px; min-height: 200px; font-family: monospace; font-size: 14px; white-space: pre-wrap; overflow-x: auto; }
+        .success-message { background: #c6f6d5; color: #2f855a; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .error-message { background: #fed7d7; color: #c53030; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-btn"><i class="fas fa-arrow-left"></i> 返回首页</a>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-database"></i> JSON转SQL工具</h1>
+            <p>将JSON数据转换为SQL INSERT语句</p>
+        </div>
+        <div class="tool-container">
+            <div class="options">
+                <div class="input-group">
+                    <label class="label">表名</label>
+                    <input type="text" id="tableName" class="input-field" placeholder="请输入表名" value="my_table">
+                </div>
+                <div class="input-group">
+                    <label class="label">操作类型</label>
+                    <select id="sqlType" class="input-field">
+                        <option value="insert">INSERT</option>
+                        <option value="update">UPDATE</option>
+                        <option value="create">CREATE TABLE</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-group">
+                <label class="label">JSON数据</label>
+                <textarea id="jsonInput" class="textarea" placeholder="请输入JSON数据，支持对象或数组"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="convertToSQL()"><i class="fas fa-magic"></i> 转换为SQL</button>
+            <button class="btn" onclick="clearAll()">清空</button>
+            <div id="messageArea"></div>
+            <div class="input-group">
+                <label class="label">SQL语句</label>
+                <div id="sqlOutput" class="output-area">SQL语句将在这里显示...</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function showMessage(msg, type='success') {
+            document.getElementById('messageArea').innerHTML = `<div class="${type}-message">${msg}</div>`;
+            setTimeout(() => document.getElementById('messageArea').innerHTML = '', 3000);
+        }
+        
+        function convertToSQL() {
+            const jsonInput = document.getElementById('jsonInput').value.trim();
+            const tableName = document.getElementById('tableName').value.trim();
+            const sqlType = document.getElementById('sqlType').value;
+            
+            if (!jsonInput || !tableName) {
+                showMessage('请输入JSON数据和表名', 'error');
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(jsonInput);
+                let sql = '';
+                
+                if (sqlType === 'create') {
+                    sql = generateCreateTable(data, tableName);
+                } else if (sqlType === 'insert') {
+                    sql = generateInsert(data, tableName);
+                } else if (sqlType === 'update') {
+                    sql = generateUpdate(data, tableName);
+                }
+                
+                document.getElementById('sqlOutput').textContent = sql;
+                showMessage('SQL生成成功！');
+            } catch (error) {
+                showMessage('JSON格式错误：' + error.message, 'error');
+            }
+        }
+        
+        function generateCreateTable(data, tableName) {
+            const sample = Array.isArray(data) ? data[0] : data;
+            if (!sample) return '';
+            
+            let sql = `CREATE TABLE ${tableName} (\n`;
+            const columns = [];
+            
+            for (const [key, value] of Object.entries(sample)) {
+                let type = 'VARCHAR(255)';
+                if (typeof value === 'number') {
+                    type = Number.isInteger(value) ? 'INT' : 'DECIMAL(10,2)';
+                } else if (typeof value === 'boolean') {
+                    type = 'BOOLEAN';
+                } else if (value instanceof Date) {
+                    type = 'DATETIME';
+                }
+                columns.push(`    ${key} ${type}`);
+            }
+            
+            sql += columns.join(',\n');
+            sql += '\n);';
+            return sql;
+        }
+        
+        function generateInsert(data, tableName) {
+            const records = Array.isArray(data) ? data : [data];
+            if (records.length === 0) return '';
+            
+            const columns = Object.keys(records[0]);
+            let sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES\n`;
+            
+            const values = records.map(record => {
+                const vals = columns.map(col => {
+                    const val = record[col];
+                    if (val === null || val === undefined) return 'NULL';
+                    if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+                    if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+                    return val;
+                });
+                return `(${vals.join(', ')})`;
+            });
+            
+            sql += values.join(',\n') + ';';
+            return sql;
+        }
+        
+        function generateUpdate(data, tableName) {
+            const record = Array.isArray(data) ? data[0] : data;
+            if (!record) return '';
+            
+            const updates = [];
+            const keys = Object.keys(record);
+            const idKey = keys.find(k => k.toLowerCase().includes('id')) || keys[0];
+            
+            for (const [key, value] of Object.entries(record)) {
+                if (key === idKey) continue;
+                let val = value;
+                if (val === null || val === undefined) val = 'NULL';
+                else if (typeof val === 'string') val = `'${val.replace(/'/g, "''")}'`;
+                else if (typeof val === 'boolean') val = val ? 'TRUE' : 'FALSE';
+                
+                updates.push(`${key} = ${val}`);
+            }
+            
+            let sql = `UPDATE ${tableName} SET\n${updates.join(',\n')}`;
+            sql += `\nWHERE ${idKey} = ${typeof record[idKey] === 'string' ? `'${record[idKey]}'` : record[idKey]};`;
+            return sql;
+        }
+        
+        function clearAll() {
+            document.getElementById('jsonInput').value = '';
+            document.getElementById('sqlOutput').textContent = 'SQL语句将在这里显示...';
+        }
+        
+        // 示例数据
+        document.getElementById('jsonInput').value = `[
+  {"id": 1, "name": "张三", "age": 25, "email": "zhangsan@example.com"},
+  {"id": 2, "name": "李四", "age": 30, "email": "lisi@example.com"}
+]`;
+    </script>
+</body>
+</html> 

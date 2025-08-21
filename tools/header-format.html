@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Header格式化 - Spider</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea'/><stop offset='50%' style='stop-color:%23764ba2'/><stop offset='100%' style='stop-color:%23fa709a'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23grad)'/><g fill='white'><circle cx='50' cy='40' r='8'/><circle cx='35' cy='35' r='3'/><circle cx='65' cy='35' r='3'/><circle cx='30' cy='50' r='2'/><circle cx='70' cy='50' r='2'/><circle cx='35' cy='65' r='2'/><circle cx='65' cy='65' r='2'/><path d='M35 35L25 25M65 35L75 25M30 50L20 50M70 50L80 50M35 65L25 75M65 65L75 75M40 30L30 20M60 30L70 20' stroke='white' stroke-width='2' fill='none'/></g></svg>">
+<link rel="stylesheet" type="text/css" href="css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #e2e8f0; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; color: white; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 15px; border-radius: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); transition: all 0.3s ease; }
+        .back-btn:hover { background: rgba(255,255,255,0.3); }
+        .tool-container { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; }
+        .tab { padding: 12px 20px; background: none; border: none; cursor: pointer; font-size: 16px; font-weight: 600; color: #718096; border-bottom: 3px solid transparent; transition: all 0.3s ease; }
+        .tab.active { color: #4facfe; border-bottom-color: #4facfe; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .textarea { width: 100%; min-height: 200px; padding: 15px; border: 2px solid #e2e8f0; border-radius: 10px; font-family: monospace; font-size: 14px; resize: vertical; }
+        .textarea:focus { outline: none; border-color: #4facfe; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin: 10px 5px; }
+        .btn-primary { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+        .output-area { background: #1a202c; color: #e2e8f0; border-radius: 10px; padding: 15px; min-height: 200px; font-family: monospace; font-size: 14px; white-space: pre-wrap; overflow-x: auto; }
+        .success-message { background: #c6f6d5; color: #2f855a; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .error-message { background: #fed7d7; color: #c53030; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .format-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }
+        .format-btn { padding: 10px; border: 2px solid #e2e8f0; background: white; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.3s ease; }
+        .format-btn.active { border-color: #4facfe; background: #f0f8ff; }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-btn"><i class="fas fa-arrow-left"></i> 返回首页</a>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-list-ul"></i> Header格式化工具</h1>
+            <p>格式化HTTP请求头，转换为各种编程语言格式</p>
+        </div>
+        <div class="tool-container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('parse')">解析Headers</button>
+                <button class="tab" onclick="switchTab('convert')">格式转换</button>
+            </div>
+            
+            <!-- 解析Headers -->
+            <div id="parse" class="tab-content active">
+                <h3>输入HTTP Headers</h3>
+                <textarea id="headersInput" class="textarea" placeholder="请输入HTTP Headers，例如：&#10;Content-Type: application/json&#10;Authorization: Bearer token123&#10;User-Agent: Mozilla/5.0"></textarea>
+                <button class="btn btn-primary" onclick="parseHeaders()"><i class="fas fa-magic"></i> 解析</button>
+                <button class="btn" onclick="clearParse()">清空</button>
+                <div id="parseMessageArea"></div>
+                <h3>解析结果</h3>
+                <div id="parseOutput" class="output-area">解析结果将在这里显示...</div>
+            </div>
+            
+            <!-- 格式转换 -->
+            <div id="convert" class="tab-content">
+                <h3>输入Headers (每行一个)</h3>
+                <textarea id="convertInput" class="textarea" placeholder="请输入Headers，例如：&#10;Content-Type: application/json&#10;Authorization: Bearer token123"></textarea>
+                <div class="format-options">
+                    <button class="format-btn active" onclick="setFormat('python')">Python requests</button>
+                    <button class="format-btn" onclick="setFormat('javascript')">JavaScript</button>
+                    <button class="format-btn" onclick="setFormat('curl')">curl命令</button>
+                    <button class="format-btn" onclick="setFormat('json')">JSON格式</button>
+                </div>
+                <button class="btn btn-primary" onclick="convertHeaders()"><i class="fas fa-code"></i> 转换</button>
+                <button class="btn" onclick="clearConvert()">清空</button>
+                <div id="convertMessageArea"></div>
+                <h3>转换结果</h3>
+                <div id="convertOutput" class="output-area">转换结果将在这里显示...</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let currentFormat = 'python';
+        
+        function showMessage(msg, type='success', area='parseMessageArea') {
+            document.getElementById(area).innerHTML = `<div class="${type}-message">${msg}</div>`;
+            setTimeout(() => document.getElementById(area).innerHTML = '', 3000);
+        }
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function setFormat(format) {
+            currentFormat = format;
+            document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        
+        function parseHeaders() {
+            const input = document.getElementById('headersInput').value.trim();
+            if (!input) {
+                showMessage('请输入HTTP Headers', 'error');
+                return;
+            }
+            
+            try {
+                const headers = {};
+                const lines = input.split('\n').filter(line => line.trim());
+                
+                for (const line of lines) {
+                    const colonIndex = line.indexOf(':');
+                    if (colonIndex === -1) continue;
+                    
+                    const key = line.substring(0, colonIndex).trim();
+                    const value = line.substring(colonIndex + 1).trim();
+                    headers[key] = value;
+                }
+                
+                let result = `解析到 ${Object.keys(headers).length} 个Header:\n\n`;
+                result += JSON.stringify(headers, null, 2);
+                result += '\n\n详细信息:\n';
+                
+                for (const [key, value] of Object.entries(headers)) {
+                    result += `\n${key}:\n  值: ${value}\n  长度: ${value.length} 字符`;
+                    
+                    // 特殊Header分析
+                    if (key.toLowerCase() === 'content-type') {
+                        result += `\n  类型: ${value.split(';')[0]}`;
+                    } else if (key.toLowerCase() === 'authorization') {
+                        const authType = value.split(' ')[0];
+                        result += `\n  认证方式: ${authType}`;
+                    } else if (key.toLowerCase() === 'user-agent') {
+                        result += `\n  浏览器信息: ${value.length > 50 ? value.substring(0, 50) + '...' : value}`;
+                    }
+                }
+                
+                document.getElementById('parseOutput').textContent = result;
+                showMessage('Headers解析成功！');
+            } catch (error) {
+                showMessage('解析失败：' + error.message, 'error');
+            }
+        }
+        
+        function convertHeaders() {
+            const input = document.getElementById('convertInput').value.trim();
+            if (!input) {
+                showMessage('请输入Headers', 'error', 'convertMessageArea');
+                return;
+            }
+            
+            try {
+                const headers = {};
+                const lines = input.split('\n').filter(line => line.trim());
+                
+                for (const line of lines) {
+                    const colonIndex = line.indexOf(':');
+                    if (colonIndex === -1) continue;
+                    
+                    const key = line.substring(0, colonIndex).trim();
+                    const value = line.substring(colonIndex + 1).trim();
+                    headers[key] = value;
+                }
+                
+                let result = '';
+                
+                switch (currentFormat) {
+                    case 'python':
+                        result = 'headers = {\n';
+                        for (const [key, value] of Object.entries(headers)) {
+                            result += `    "${key}": "${value}",\n`;
+                        }
+                        result += '}\n\nresponse = requests.get(url, headers=headers)';
+                        break;
+                        
+                    case 'javascript':
+                        result = 'const headers = {\n';
+                        for (const [key, value] of Object.entries(headers)) {
+                            result += `    "${key}": "${value}",\n`;
+                        }
+                        result += '};\n\nfetch(url, { headers })';
+                        break;
+                        
+                    case 'curl':
+                        result = 'curl -X GET';
+                        for (const [key, value] of Object.entries(headers)) {
+                            result += ` \\\n  -H "${key}: ${value}"`;
+                        }
+                        result += ' \\\n  "https://example.com"';
+                        break;
+                        
+                    case 'json':
+                        result = JSON.stringify(headers, null, 2);
+                        break;
+                }
+                
+                document.getElementById('convertOutput').textContent = result;
+                showMessage('Headers转换成功！', 'success', 'convertMessageArea');
+            } catch (error) {
+                showMessage('转换失败：' + error.message, 'error', 'convertMessageArea');
+            }
+        }
+        
+        function clearParse() {
+            document.getElementById('headersInput').value = '';
+            document.getElementById('parseOutput').textContent = '解析结果将在这里显示...';
+        }
+        
+        function clearConvert() {
+            document.getElementById('convertInput').value = '';
+            document.getElementById('convertOutput').textContent = '转换结果将在这里显示...';
+        }
+        
+        // 示例数据
+        const sampleHeaders = `Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+Accept: application/json, text/plain, */*
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8`;
+        
+        document.getElementById('headersInput').value = sampleHeaders;
+        document.getElementById('convertInput').value = sampleHeaders;
+    </script>
+</body>
+</html> 
